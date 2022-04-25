@@ -162,7 +162,7 @@ class DataGenerator():
             Args: None
             Returns: pd.dataframe including the following features:
                         ['ID', 'Name', 'Gender', Preferred language', 'Majors', 'Level 
-                        of ambition','Prefered meeting place', 'Personality type', 
+                        of ambition','Preferred meeting place', 'Personality type', 
                         'Best friend','Openness', 'Blocked day]
             
                      string indicating the nature of the returned dataframe ("full")
@@ -223,7 +223,7 @@ class DataGenerator():
         # create dataframe
 
         df_extra = pd.DataFrame(list(zip(l_meet, l_pers, l_friends, l_days)), columns = [
-                                                                                        'Prefered meeting place', 'Personality type', 
+                                                                                        'Preferred meeting place', 'Personality type', 
                                                                                         'Best friend', 'Preferred day'
                                                                                         ])
 
