@@ -5,6 +5,7 @@ import copy
 import math
 import itertools
 import argparse
+from sys import platform
 
 class DataGenerator():
     
@@ -50,10 +51,15 @@ class DataGenerator():
         '''
 
         #load names from lists
-        with open("names\german-names-female.txt", encoding='utf8') as f:
+        if platform == "win32":
+            path = chr(92)
+        else:
+            path = "/" 
+
+        with open("names" + path + "german-names-female.txt", encoding='utf8') as f:
             names_female = f.read().splitlines() 
 
-        with open("names\german-names-male.txt", encoding='utf8') as f:
+        with open("names" + path + "german-names-male.txt", encoding='utf8') as f:
             names_male = f.read().splitlines() 
 
         # set percentages
