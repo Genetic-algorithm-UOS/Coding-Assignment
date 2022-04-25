@@ -3,8 +3,10 @@ import random
 import os  
 import copy
 import math
+import itertools
+import argparse
 
-class DataGenerator:
+class DataGenerator():
     
     '''
         This class serves to create a dataset in the form of a pd.dataframe. 
@@ -12,30 +14,39 @@ class DataGenerator:
         features depending on which internal method is called.  
     '''
 
-    def __init__ (self):
+    def __init__ (self,*size):
         
         '''
-            Prompts user input with regards to the desired sample size. Said input needs to be
-            of type integer, dividable by 10 and of size 10 - 2700.
+            If not already provided through arguments, this prompts user input
+            with regards to the desired sample size. Said input needs to be of
+            type integer, dividable by 10 and of size 10 - 2700.
         '''
-    
-        while True:    
-            try:
-                self.n = int(input("Please provide the number of participants: "))
+        
+        # check if size is provided
+        
+        try:
+            self.n = size[0]
+            
+        except:
+            
+            while True:    
+                try:
+                    self.n = int(input("Please provide the number of participants: "))
 
-                if (self.n%10 == 0) and (self.n < 2700) and (self.n >= 10):
-                    break
+                    if (self.n%10 == 0) and (self.n < 2700) and (self.n >= 10):
+                        break
 
-                print("Number of participants needs to be dividable by 10 and smaller than 2700!")
-                   
-            except:
-                print("Please provide an integer value!\n")
+                    print("Number of participants needs to be dividable by 10 and smaller than 2700!")
+
+                except:
+                    print("Please provide an integer value!\n")
         
     def names(self):
         
         '''
             Args: None
             Returns: list of length self.n including a random mixture of male and female names
+                     list of length self.n including matching genders and sometimes indeterminate at random (m/f/x)
         '''
 
         #load names from lists
@@ -52,19 +63,33 @@ class DataGenerator:
         # create sublists of unique names
         l_female = random.sample(names_female,k = int(self.n/100 * p_female))
         l_male = random.sample(names_male,k = int(self.n/100 * p_male))
+        
+        l_female = list(zip(l_female, itertools.repeat("Female")))
+        l_male = list(zip(l_male, itertools.repeat("Male")))
 
         # unify and shuffle
-        l_name = l_female + l_male 
-        random.shuffle(l_name)
+        l_tmp = l_female + l_male 
+        random.shuffle(l_tmp)
         
-        return l_name
+        # unpack into gender and name lists
+        l_name, l_gen = zip(*l_tmp)
+        l_name = list(l_name)
+        l_gen = list(l_gen)
+        
+        # create x genders (~5%)
+             
+        for i in range(int(self.n/100 * 5)):
+            random_index = random.randrange(len(l_gen))
+            l_gen[random_index] = "Indeterminate"
+            
+        return l_name, l_gen
         
     def create_basic(self):
         
         '''
             Args: None
             Returns: pd.dataframe including the following features:
-                        ['ID', 'Name', 'Preferred language', 'Majors', 'Level of ambition']
+                        ['ID', 'Name', 'Gender', 'Preferred language', 'Majors', 'Level of ambition']
             
                      string indicating the nature of the returned dataframe ("basic")
         '''
@@ -72,11 +97,11 @@ class DataGenerator:
         # 1: Create IDs
         l_id = list(range(1,self.n+1))
 
-        # 2: create names 
+        # 2: create names and genders
         
-        l_name = self.names()
+        l_name, l_gen = self.names()        
 
-        # 3: create language preferences
+        # 4: create language preferences
 
         # set percentages
         p_any = 80
@@ -92,9 +117,9 @@ class DataGenerator:
         l_lang = l_any + l_en + l_ger 
         random.shuffle(l_lang)
 
-        # 4: create majors 
+        # 5: create majors 
 
-        maj = ["AI", "NP", "PHIL", "CL", "NI", "NB", "DS"]
+        maj = ["AI", "CP", "CL", "NI", "NS", "PHIL"]
 
         # create sublists
 
@@ -118,8 +143,8 @@ class DataGenerator:
         l_amb = random.choices(amb, k=self.n)
         
         # save as dataframe
-        df_basic = pd.DataFrame(list(zip(l_id, l_name, l_lang, l_maj, l_amb)), columns = [
-                                                                                    'ID', 'Name', 'Preferred language', 
+        df_basic = pd.DataFrame(list(zip(l_id, l_name, l_gen, l_lang, l_maj, l_amb)), columns = [
+                                                                                    'ID', 'Name', 'Gender', 'Preferred language', 
                                                                                     'Majors', 'Level of ambition'
                                                                                     ])
 
@@ -130,9 +155,9 @@ class DataGenerator:
         '''
             Args: None
             Returns: pd.dataframe including the following features:
-                        ['ID', 'Name', 'Preferred language', 'Majors', 'Level of ambition',
-                        'Prefered meeting place', 'Personality type', 'Best friend',
-                        'Openness', 'Blocked day]
+                        ['ID', 'Name', 'Gender', Preferred language', 'Majors', 'Level 
+                        of ambition','Prefered meeting place', 'Personality type', 
+                        'Best friend','Openness', 'Blocked day]
             
                      string indicating the nature of the returned dataframe ("full")
         '''
@@ -164,7 +189,7 @@ class DataGenerator:
 
         l_pers = random.choices(pers, k=self.n)
 
-        # 3: Best friend(s)
+        # 3: Best friend
 
         l_bf = df_basic['Name'].tolist()
 
@@ -182,23 +207,7 @@ class DataGenerator:
                 ind = l_bf_2.index(l_bf[i])
                 l_friends.append(l_bf_1[ind])
 
-        # 4: Openness towards new people
-
-        # set percentages
-        p_rel = 20
-        p_neu = 40
-        p_con = 40
-
-        #create sublists
-        l_rel = ["Reluctant"] * int(self.n/100 * p_rel)
-        l_neu = ["Neutral"] * int(self.n/100 * p_neu)
-        l_con = ["Confident"] * int(self.n/100 * p_con)
-
-        # unify and shuffle
-        l_open = l_rel + l_neu + l_con
-        random.shuffle(l_open)
-
-        # 5: Timetable
+        # 4: Timetable
         days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
         l_days = []
         for day in days:
@@ -207,9 +216,32 @@ class DataGenerator:
         
         # create dataframe
 
-        df_extra = pd.DataFrame(list(zip(l_meet, l_pers, l_friends, l_open, l_days)), columns = [
+        df_extra = pd.DataFrame(list(zip(l_meet, l_pers, l_friends, l_days)), columns = [
                                                                                         'Prefered meeting place', 'Personality type', 
-                                                                                        'Best friend', 'Openness', 'Blocked day'
+                                                                                        'Best friend', 'Preferred day'
                                                                                         ])
 
         return (pd.concat([df_basic, df_extra],axis=1)), "full"
+    
+if __name__ == "__main__":
+    
+    parser = argparse.ArgumentParser(description="Dataset generation for the Genetic Algorithms task")
+    
+    parser.add_argument("size", default="50", 
+                        type=int, help='Should be dividable by 10 and lower than 2700')
+    parser.add_argument("type", default="full", 
+                        type=str, choices=["basic", "full"],
+                        help='Choose from either the basic or the full featured dataset')
+  
+    args = parser.parse_args()
+    
+    generator = DataGenerator(args.size)
+    
+    if args.type == "basic":
+        dataset, type_ = generator.create_basic()
+    else: 
+        dataset, type_ = generator.create_full()
+        
+    # save dataframe to csv
+
+    dataset.to_csv("dataset_" + type_ + ".csv", encoding="utf-8-sig", index=False)
